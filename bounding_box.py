@@ -1,7 +1,7 @@
 import cv2 as cv
 import numpy as np
 import math
-cap=cv.VideoCapture(0)
+cap=cv.VideoCapture(1)
 cap.set(15, .000001)
 while True :
     ret,frame=cap.read()
@@ -11,24 +11,39 @@ while True :
     final=cv.bitwise_and(frame,frame,mask=mask)
     gray=cv.cvtColor(final,cv.COLOR_BGR2GRAY)
     ret, thresh = cv.threshold(gray, 127, 255, 0)
-    contours, hierarchy = cv.findContours(thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    # cv.drawContours(final, contours, -1, (0,255,0), 3)
+    _,contours, hierarchy = cv.findContours(thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    cv.drawContours(final, contours, -1, (0,255,0), 3)
     hset=[]
     filters=np.ones(final.shape[:2],dtype="uint8")*255
+    healthbar=np.zeros(final.shape[:2],dtype="uint8")*255
     for i in contours:
         x,y,w,h = cv.boundingRect(i)
-        if w/h<0.000000000005:
-            cv.rectangle(final,(x,y),(x+w,y+h),(255,0,0),2)
+        if w/h<0.7:
+            cv.rectangle(final,(x,y),(x+w,y+h),(0,0,255),2)
             cv.drawContours(filters,[i],-1,1,2)
+	
             # hset.append(h)
-    # cv.imshow('d',frame)
+        elif w/h>0.2:
+            cv.rectangle(healthbar,(x,y),(x+w,y+h),(255,255,255),-1)
+    kernel = np.ones((2,2), np.uint8) 
+    healthbar = cv.erode(healthbar, kernel, iterations=1)
+    healthbar = cv.dilate(healthbar, kernel, iterations=15)
+    for row in len(healthbar[1,:]):
+            flag=0
+            for pixel in healthbar[pixel,row]:
+                if (pixel==1):
+                    flag=1
+                    break
+            if flag==1:
+                for pixel in healthbar[pixel,row]:
+                    healthbar[pixel,row]=1
     # cv.imshow('c',filters)
     # print(hset)      
     image=cv.bitwise_and(frame,frame,mask=cv.bitwise_not(filters))  
     gray=cv.cvtColor(image,cv.COLOR_BGR2GRAY)
     
     ret, thresh = cv.threshold(gray, 127, 255, 0)
-    contours, hierarchy = cv.findContours(thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    _,contours, hierarchy = cv.findContours(thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     rectangles=[]
     max_rect=[]
     bgr=cv.cvtColor(gray,cv.COLOR_GRAY2BGR)
@@ -86,8 +101,27 @@ while True :
         x2,y2=rectangle[0]
         x=int ((x1+x2)/2)
         y=int ((y1+y2)/2)
-        center_target=x,y        
-        print(center_target)
+        center_target=x,y 
+        cv.imshow('w',healthbar)
+
+        # back=0
+        left=0
+        right=0
+        for x_iterate in range (x,len(healthbar[1,:])): 
+            if healthbar[y,x_iterate]:
+                right=1
+                break
+        for x_iterate in range (0,x): 
+            if healthbar[y,x_iterate]:
+                left=1
+                break
+        if healthbar[y,x]==1:
+            print('back')
+        elif  right :
+            print('right')
+        elif left:
+            print('left')
+        #print(center_target)
         if abs(angle_i-angle_j)<10:
             cv.circle(frame,center_target,4,(0,255,0),5)
     except:
