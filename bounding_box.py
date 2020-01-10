@@ -121,7 +121,9 @@ while True :
             print('right')
         elif left:
             print('left')
+        else: print('front')
         #print(center_target)
+
         if abs(angle_i-angle_j)<10:
             cv.circle(frame,center_target,4,(0,255,0),5)
     except:
